@@ -7,8 +7,8 @@ Date : 17th June 2022
 
 # import libraries
 import logging
+import os
 
-import dataframe_image as dfi
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,7 +30,7 @@ logging.basicConfig(
 )
 
 
-def import_data(pth):
+def import_data(pth: str) -> pd.DataFrame:
     """
     returns dataframe for the csv found at pth
 
@@ -39,48 +39,59 @@ def import_data(pth):
     output:
             df: pandas dataframe
     """
+
     try:
         df_data = pd.read_csv(pth)
-        logging.info(f"SUCCESS: file {pth} loaded successfully")
+        logging.info("SUCCESS: file %s loaded successfully", pth)
     except FileNotFoundError as err:
-        logging.error(f"ERROR: file {pth} not found")
+        logging.error("ERROR: file %s not found", pth)
+
+        # re-Raising the error since it's a critical one.
         raise err
     return df_data
 
 
-def perform_eda(df):
+def perform_eda(df_data: pd.DataFrame) -> pd.DataFrame:
     """
     perform eda on df and save figures to images folder
     input:
             df: pandas dataframe
 
     output:
-            None
+            eda_df: pandas dataframe
     """
-    # churn histogram
-    plt.figure(figsize=(20, 10))
-    df["Churn"].hist()
-    plt.savefig("images/eda/churn_hist_img.png")
+    # Copy DataFrame
+    eda_df = df_data.copy(deep=True)
 
-    # customer_age_histogram
-    plt.figure(figsize=(20, 10))
-    df["Customer_Age"].hist()
-    plt.savefig("images/eda/customer_age_hist_img.png")
+    # Churn
+    eda_df["Churn"] = eda_df["Attrition_Flag"].apply(
+        lambda val: 0 if val == "Existing Customer" else 1
+    )
 
-    # marital status histogram
+    # Churn Distribution
     plt.figure(figsize=(20, 10))
-    df.Marital_Status.value_counts("normalize").plot(kind="bar")
-    plt.savefig("images/eda/marital_status_hist_img.png")
+    eda_df["Churn"].hist()
+    plt.savefig(fname="./images/eda/churn_distribution.png")
 
-    # distribution plot
+    # Customer Age Distribution
     plt.figure(figsize=(20, 10))
-    sns.distplot(df["Total_Trans_Ct"])
-    plt.savefig("images/eda/dist_plot_img.png")
+    eda_df["Customer_Age"].hist()
+    plt.savefig(fname="./images/eda/customer_age_distribution.png")
 
-    # heatmap
+    # Marital Status Distribution
     plt.figure(figsize=(20, 10))
-    sns.heatmap(df.corr(), annot=False, cmap="Dark2_r", linewidths=2)
-    plt.savefig("images/eda/heat_map_img.png")
+    eda_df.Marital_Status.value_counts("normalize").plot(kind="bar")
+    plt.savefig(fname="./images/eda/marital_status_distribution.png")
+
+    # Total Transaction Distribution
+    plt.figure(figsize=(20, 10))
+    sns.histplot(eda_df["Total_Trans_Ct"], kde=True)
+    plt.savefig(fname="./images/eda/total_transaction_distribution.png")
+
+    # Heatmap
+    plt.figure(figsize=(20, 10))
+    sns.heatmap(eda_df.corr(), annot=False, cmap="Dark2_r", linewidths=2)
+    plt.savefig(fname="./images/eda/heatmap.png")
 
     logging.info("SUCCESS: Figures saved to images folder.")
 
@@ -111,28 +122,36 @@ def perform_eda(df):
     ]
     column_name = set(cat_columns + quant_columns)
     try:
-        # Checking that the qualitative and quantitative columns exists in the DF variable.
-        df_columns = set(df.columns)
+        # Checking that the qualitative and quantitative columns exists
+        # in the DF variable.
+        df_columns = set(df_data.columns)
         assert column_name <= df_columns
         logging.info(
-            "SUCCESS: qualitative and quantitative columns exists in the DF variable."
+            "SUCCESS: qualitative and quantitative columns exists in the \
+                DF variable."
         )
-
-    except AssertionError as err:
+    except AssertionError:
         logging.error(
-            f"ERROR: Missing column names {column_name - column_name.intersection(df_columns)}.")
-            raise err
+            "ERROR: Missing column names \
+               %s.",
+            column_name - column_name.intersection(df_columns),
+        )
+    # Return dataframe
+    return eda_df
 
 
-def encoder_helper(df, category_lst, response):
+def encoder_helper(df_data, category_lst, response: str) -> pd.DataFrame:
     """
     helper function to turn each categorical column into a new column with
-    propotion of churn for each category - associated with cell 15 from the notebook
+    propotion of churn for each category
+    - associated with cell 15 from the notebook
 
     input:
-            df: pandas dataframe
+            df_data: pandas dataframe
             category_lst: list of columns that contain categorical features
-            response: string of response name [optional argument that could be used for naming variables or index y column]
+            response: string of response name
+            [optional argument that could be used for naming
+            variables or index y column]
 
     output:
             df: pandas dataframe with new columns for
@@ -140,19 +159,23 @@ def encoder_helper(df, category_lst, response):
 
     # Cheking that the df_data variable has a DataFrame type
     try:
-        assert isinstance(df, pd.DataFrame)
+        assert isinstance(df_data, pd.DataFrame)
     except AssertionError as err:
         logging.error(
-            f'ERROR: argument df_data in encoder_helper \
-                is expected to be {pd.DataFrame} but is {type(df)}')
+            "ERROR: argument df_data in encoder_helper \
+                is expected to be %s but is %s",
+            pd.DataFrame,
+            type(df_data),
+        )
         raise err
-    
+
     # Testing that all names of categories are strings
     try:
         assert all(isinstance(elm, str) for elm in category_lst)
     except AssertionError as err:
         logging.error(
-            'ERROR: All the element in category_list should be of type str')
+            "ERROR: All the element in category_list should be of type str"
+        )
         raise err
 
     # Testing that the names of the new columns are strings
@@ -160,35 +183,48 @@ def encoder_helper(df, category_lst, response):
         assert all(isinstance(elm, str) for elm in response)
     except AssertionError as err:
         logging.error(
-            'ERROR: All the element in response should be of type str')
+            "ERROR: All the element in response should be of type str"
+        )
         raise err
 
-    # Sanity check the number of qualitative categories is the same as the new transformed columns
+    # Sanity check the number of qualitative categories is the same as the new
+    # transformed columns
     try:
         assert len(response) == len(category_lst)
     except AssertionError as err:
         logging.error(
-            'ERROR: category_lst and response should have the same length')
+            "ERROR: category_lst and response should have the same length"
+        )
         raise err
+
+    encoder_df = df_data.copy(deep=True)
 
     for column in category_lst:
         column_lst = []
-        group = df.groupby(column).mean()["Churn"]
-        for val in df[column]:
+        group = df_data.groupby(column).mean()["Churn"]
+
+        for val in df_data[column]:
             column_lst.append(group.loc[val])
-            column_name = f"{column}_{response}"
-        df[column_name] = column_lst
+
+        if response:
+            encoder_df[column + "_" + response] = column_lst
+        else:
+            encoder_df[column] = column_lst
 
     logging.info("SUCCESS: Categorical data transformation finished.")
 
-    return df
+    return encoder_df
 
 
-def perform_feature_engineering(df, response = 'churn'):
+def perform_feature_engineering(
+    df_data: pd.DataFrame, response: str = "Churn"
+) -> tuple:
     """
     input:
-              df: pandas dataframe
-              response: string of response name [optional argument that could be used for naming variables or index y column]
+              df_data: pandas dataframe
+              response: string of response name
+              [optional argument that could
+              be used for naming variables or index y column]
 
     output:
               X_train: X training data
@@ -199,58 +235,89 @@ def perform_feature_engineering(df, response = 'churn'):
 
     # Cheking that the df_data variable has a DataFrame type
     try:
-        assert isinstance(df, pd.DataFrame)
+        assert isinstance(df_data, pd.DataFrame)
     except AssertionError as err:
         logging.error(
-            f'ERROR: argument df_data in perform_feature_engineering \
-                is expected to be {pd.DataFrame} but is {type(df)}')
+            "ERROR: argument df_data in perform_feature_engineering \
+                is expected to be %s but is %s",
+            pd.DataFrame,
+            type(df_data),
+        )
         raise err
 
-    # Cheking the type of response. It should be a string representing the target column name
+    # Cheking the type of response. It should be a string representing the
+    # target column name
     try:
         assert isinstance(response, str)
     except AssertionError as err:
         logging.error(
-            f'ERROR: argument response in perform_feature_engineering \
-                is expected to be {str} but is {type(response)}')
+            "ERROR: argument response in perform_feature_engineering \
+                is expected to be %s but is %s",
+            str,
+            type(response),
+        )
         raise err
-    logging.info('INFO: Splitting data into train and test (70%, 30%).')
+
+    logging.info("INFO: Splitting data into train and test (70%, 30%).")
+
+    # categorical features
+    cat_columns = [
+        "Gender",
+        "Education_Level",
+        "Marital_Status",
+        "Income_Category",
+        "Card_Category",
+    ]
+
+    # feature engineering
+    encoded_df = encoder_helper(
+        df_data, category_lst=cat_columns, response=response
+    )
+
+    # target feature
+    y = encoded_df[response]
+
+    # Create dataframe
+    X = pd.DataFrame()
 
     # Selecting the input columns
     keep_cols = [
-        'Customer_Age',
-        'Dependent_count',
-        'Months_on_book',
-        'Total_Relationship_Count',
-        'Months_Inactive_12_mon',
-        'Contacts_Count_12_mon',
-        'Credit_Limit',
-        'Total_Revolving_Bal',
-        'Avg_Open_To_Buy',
-        'Total_Amt_Chng_Q4_Q1',
-        'Total_Trans_Amt',
-        'Total_Trans_Ct',
-        'Total_Ct_Chng_Q4_Q1',
-        'Avg_Utilization_Ratio',
-        'Gender_Churn',
-        'Education_Level_Churn',
-        'Marital_Status_Churn',
-        'Income_Category_Churn',
-        'Card_Category_Churn']
+        "Customer_Age",
+        "Dependent_count",
+        "Months_on_book",
+        "Total_Relationship_Count",
+        "Months_Inactive_12_mon",
+        "Contacts_Count_12_mon",
+        "Credit_Limit",
+        "Total_Revolving_Bal",
+        "Avg_Open_To_Buy",
+        "Total_Amt_Chng_Q4_Q1",
+        "Total_Trans_Amt",
+        "Total_Trans_Ct",
+        "Total_Ct_Chng_Q4_Q1",
+        "Avg_Utilization_Ratio",
+        "Gender_Churn",
+        "Education_Level_Churn",
+        "Marital_Status_Churn",
+        "Income_Category_Churn",
+        "Card_Category_Churn",
+    ]
 
-    X = pd.DataFrame()
-    X[keep_cols] = df[keep_cols]
-    y = df[response]
+    # Features DataFrame
+    X[keep_cols] = encoded_df[keep_cols]
 
     # Spliting the data to 70% train and 30% test
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42)
-    logging.info('SUCCESS: Data splitting finished.')
-    logging.info(f'INFO: X_train size {X_train.shape}.')
-    logging.info(f'INFO: X_test size {X_test.shape}.')
-    logging.info(f'INFO: Y_train size {y_train.shape}.')
-    logging.info(f'INFO: Y_test size {y_test.shape}.')
+        X, y, test_size=0.3, random_state=42
+    )
+    logging.info("SUCCESS: Data splitting finished.")
+    logging.info("INFO: X_train size %s.", X_train.shape)
+    logging.info("INFO: X_test size  %s.", X_test.shape)
+    logging.info("INFO: Y_train size %s.", y_train.shape)
+    logging.info("INFO: Y_test size  %s.", y_test.shape)
+
     return X_train, X_test, y_train, y_test
+
 
 def classification_report_image(
     y_train,
@@ -259,7 +326,7 @@ def classification_report_image(
     y_train_preds_rf,
     y_test_preds_lr,
     y_test_preds_rf,
-):
+) -> None:
     """
     produces classification report for training and testing results and stores report as image
     in images folder
@@ -277,7 +344,7 @@ def classification_report_image(
     pass
 
 
-def feature_importance_plot(model, X_data, output_pth):
+def feature_importance_plot(model, X_data, output_pth) -> None:
     """
     creates and stores the feature importances in pth
     input:
@@ -291,7 +358,7 @@ def feature_importance_plot(model, X_data, output_pth):
     pass
 
 
-def train_models(X_train, X_test, y_train, y_test):
+def train_models(X_train, X_test, y_train, y_test) -> None:
     """
     train, store model results: images + scores, and store models
     input:
@@ -310,11 +377,11 @@ if __name__ == "__main__":
     BANK_DF = import_data(pth="./data/bank_data.csv")
 
     # Perform EDA
-    EDA_DF = perform_eda(dataframe=BANK_DF)
+    EDA_DF = perform_eda(BANK_DF)
 
     # Feature engineering
     X_TRAIN, X_TEST, Y_TRAIN, Y_TEST = perform_feature_engineering(
-        dataframe=EDA_DF, response="Churn"
+        EDA_DF, response="Churn"
     )
 
     # Model training,prediction and evaluation
