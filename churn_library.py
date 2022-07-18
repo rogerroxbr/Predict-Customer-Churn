@@ -137,6 +137,40 @@ def encoder_helper(df, category_lst, response):
     output:
             df: pandas dataframe with new columns for
     """
+
+    # Cheking that the df_data variable has a DataFrame type
+    try:
+        assert isinstance(df, pd.DataFrame)
+    except AssertionError as err:
+        logging.error(
+            f'ERROR: argument df_data in encoder_helper \
+                is expected to be {pd.DataFrame} but is {type(df)}')
+        raise err
+    
+    # Testing that all names of categories are strings
+    try:
+        assert all(isinstance(elm, str) for elm in category_lst)
+    except AssertionError as err:
+        logging.error(
+            'ERROR: All the element in category_list should be of type str')
+        raise err
+
+    # Testing that the names of the new columns are strings
+    try:
+        assert all(isinstance(elm, str) for elm in response)
+    except AssertionError as err:
+        logging.error(
+            'ERROR: All the element in response should be of type str')
+        raise err
+
+    # Sanity check the number of qualitative categories is the same as the new transformed columns
+    try:
+        assert len(response) == len(category_lst)
+    except AssertionError as err:
+        logging.error(
+            'ERROR: category_lst and response should have the same length')
+        raise err
+
     for column in category_lst:
         column_lst = []
         group = df.groupby(column).mean()["Churn"]
@@ -182,6 +216,7 @@ def perform_feature_engineering(df, response = 'churn'):
         raise err
     logging.info('INFO: Splitting data into train and test (70%, 30%).')
 
+    # Selecting the input columns
     keep_cols = [
         'Customer_Age',
         'Dependent_count',
@@ -208,7 +243,6 @@ def perform_feature_engineering(df, response = 'churn'):
     y = df[response]
 
     # Spliting the data to 70% train and 30% test
-
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.3, random_state=42)
     logging.info('SUCCESS: Data splitting finished.')
