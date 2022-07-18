@@ -341,21 +341,110 @@ def classification_report_image(
     output:
              None
     """
-    pass
+    # RandomForestClassifier
+    plt.rc("figure", figsize=(6, 6))
+    plt.text(
+        0.01,
+        1.25,
+        str("Random Forest Train"),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.text(
+        0.01,
+        0.05,
+        str(classification_report(y_test, y_test_preds_rf)),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.text(
+        0.01,
+        0.6,
+        str("Random Forest Test"),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.text(
+        0.01,
+        0.7,
+        str(classification_report(y_train, y_train_preds_rf)),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.axis("off")
+    plt.savefig(fname="./images/results/rf_results.png")
+
+    # LogisticRegression
+    plt.rc("figure", figsize=(6, 6))
+    plt.text(
+        0.01,
+        1.25,
+        str("Logistic Regression Train"),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.text(
+        0.01,
+        0.05,
+        str(classification_report(y_train, y_train_preds_lr)),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.text(
+        0.01,
+        0.6,
+        str("Logistic Regression Test"),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.text(
+        0.01,
+        0.7,
+        str(classification_report(y_test, y_test_preds_lr)),
+        {"fontsize": 10},
+        fontproperties="monospace",
+    )
+    plt.axis("off")
+    plt.savefig(fname="./images/results/logistic_results.png")
+    logging.info("SUCCESS: Classification report finished.")
 
 
-def feature_importance_plot(model, X_data, output_pth) -> None:
+def feature_importance_plot(model, features, output_pth) -> None:
     """
     creates and stores the feature importances in pth
     input:
             model: model object containing feature_importances_
-            X_data: pandas dataframe of X values
+            features: pandas dataframe of X values
             output_pth: path to store the figure
 
     output:
              None
     """
-    pass
+    # Feature importances
+    importances = model.best_estimator_.feature_importances_
+
+    # Sort Feature importances in descending order
+    indices = np.argsort(importances)[::-1]
+
+    # Sorted feature importances
+    names = [features.columns[i] for i in indices]
+
+    # Create plot
+    plt.figure(figsize=(25, 15))
+
+    # Create plot title
+    plt.title("Feature Importance")
+    plt.ylabel("Importance")
+
+    # Add bars
+    plt.bar(range(features.shape[1]), importances[indices])
+
+    # x-axis labels
+    plt.xticks(range(features.shape[1]), names, rotation=90)
+
+    # Save the image
+    plt.savefig(fname=output_pth + "feature_importances.png")
+    logging.info("SUCCESS: feature importance plot finished.")
 
 
 def train_models(X_train, X_test, y_train, y_test) -> None:
@@ -369,7 +458,62 @@ def train_models(X_train, X_test, y_train, y_test) -> None:
     output:
               None
     """
-    pass
+    # RandomForestClassifier and LogisticRegression
+    rfc = RandomForestClassifier(random_state=42, n_jobs=-1)
+    lrc = LogisticRegression(n_jobs=-1, max_iter=1000)
+
+    # Parameters for Grid Search
+    param_grid = {
+        "n_estimators": [200, 500],
+        "max_features": ["auto", "sqrt"],
+        "max_depth": [4, 5, 100],
+        "criterion": ["gini", "entropy"],
+    }
+
+    # Grid Search and fit for RandomForestClassifier
+    cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
+    cv_rfc.fit(X_train, y_train)
+
+    # LogisticRegression
+    lrc.fit(X_train, y_train)
+
+    # Save best models
+    joblib.dump(cv_rfc.best_estimator_, "./models/rfc_model.pkl")
+    joblib.dump(lrc, "./models/logistic_model.pkl")
+
+    # Compute train and test predictions for RandomForestClassifier
+    y_train_preds_rf = cv_rfc.best_estimator_.predict(X_train)
+    y_test_preds_rf = cv_rfc.best_estimator_.predict(X_test)
+
+    # Compute train and test predictions for LogisticRegression
+    y_train_preds_lr = lrc.predict(X_train)
+    y_test_preds_lr = lrc.predict(X_test)
+
+    # Compute ROC curve
+    plt.figure(figsize=(15, 8))
+    axis = plt.gca()
+    lrc_plot = plot_roc_curve(lrc, X_test, y_test, ax=axis, alpha=0.8)
+    rfc_disp = plot_roc_curve(
+        cv_rfc.best_estimator_, X_test, y_test, ax=axis, alpha=0.8
+    )
+    plt.savefig(fname="./images/results/roc_curve_result.png")
+    # plt.show()
+
+    # Compute and results
+    classification_report_image(
+        y_train,
+        y_test,
+        y_train_preds_lr,
+        y_train_preds_rf,
+        y_test_preds_lr,
+        y_test_preds_rf,
+    )
+
+    # Compute and feature importance
+    feature_importance_plot(
+        model=cv_rfc, features=X_test, output_pth="./images/results/"
+    )
+    logging.info("SUCCESS: Train models finished.")
 
 
 if __name__ == "__main__":

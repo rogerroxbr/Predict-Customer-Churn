@@ -1,0 +1,10 @@
+2022-07-18 18:04:07 - root - INFO - SUCCESS: file ./data/bank_data.csv loaded successfully
+2022-07-18 18:04:09 - root - INFO - SUCCESS: Figures saved to images folder.
+2022-07-18 18:04:09 - root - INFO - SUCCESS: qualitative and quantitative columns exists in the                 DF variable.
+2022-07-18 18:04:09 - root - INFO - INFO: Splitting data into train and test (70%, 30%).
+2022-07-18 18:04:09 - root - INFO - SUCCESS: Categorical data transformation finished.
+2022-07-18 18:04:09 - root - INFO - SUCCESS: Data splitting finished.
+2022-07-18 18:04:09 - root - INFO - INFO: X_train size (7088, 19).
+2022-07-18 18:04:09 - root - INFO - INFO: X_test size  (3039, 19).
+2022-07-18 18:04:09 - root - INFO - INFO: Y_train size (7088,).
+2022-07-18 18:04:09 - root - INFO - INFO: Y_test size  (3039,).
