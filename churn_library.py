@@ -157,46 +157,6 @@ def encoder_helper(df_data, category_lst, response: str) -> pd.DataFrame:
             df: pandas dataframe with new columns for
     """
 
-    # Cheking that the df_data variable has a DataFrame type
-    try:
-        assert isinstance(df_data, pd.DataFrame)
-    except AssertionError as err:
-        logging.error(
-            "ERROR: argument df_data in encoder_helper \
-                is expected to be %s but is %s",
-            pd.DataFrame,
-            type(df_data),
-        )
-        raise err
-
-    # Testing that all names of categories are strings
-    try:
-        assert all(isinstance(elm, str) for elm in category_lst)
-    except AssertionError as err:
-        logging.error(
-            "ERROR: All the element in category_list should be of type str"
-        )
-        raise err
-
-    # Testing that the names of the new columns are strings
-    try:
-        assert all(isinstance(elm, str) for elm in response)
-    except AssertionError as err:
-        logging.error(
-            "ERROR: All the element in response should be of type str"
-        )
-        raise err
-
-    # Sanity check the number of qualitative categories is the same as the new
-    # transformed columns
-    try:
-        assert len(response) == len(category_lst)
-    except AssertionError as err:
-        logging.error(
-            "ERROR: category_lst and response should have the same length"
-        )
-        raise err
-
     encoder_df = df_data.copy(deep=True)
 
     for column in category_lst:
