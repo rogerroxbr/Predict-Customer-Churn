@@ -150,7 +150,7 @@ def encoder_helper(df, category_lst, response):
     return df
 
 
-def perform_feature_engineering(df, response):
+def perform_feature_engineering(df, response = 'churn'):
     """
     input:
               df: pandas dataframe
@@ -163,6 +163,60 @@ def perform_feature_engineering(df, response):
               y_test: y testing data
     """
 
+    # Cheking that the df_data variable has a DataFrame type
+    try:
+        assert isinstance(df, pd.DataFrame)
+    except AssertionError as err:
+        logging.error(
+            f'ERROR: argument df_data in perform_feature_engineering \
+                is expected to be {pd.DataFrame} but is {type(df)}')
+        raise err
+
+    # Cheking the type of response. It should be a string representing the target column name
+    try:
+        assert isinstance(response, str)
+    except AssertionError as err:
+        logging.error(
+            f'ERROR: argument response in perform_feature_engineering \
+                is expected to be {str} but is {type(response)}')
+        raise err
+    logging.info('INFO: Splitting data into train and test (70%, 30%).')
+
+    keep_cols = [
+        'Customer_Age',
+        'Dependent_count',
+        'Months_on_book',
+        'Total_Relationship_Count',
+        'Months_Inactive_12_mon',
+        'Contacts_Count_12_mon',
+        'Credit_Limit',
+        'Total_Revolving_Bal',
+        'Avg_Open_To_Buy',
+        'Total_Amt_Chng_Q4_Q1',
+        'Total_Trans_Amt',
+        'Total_Trans_Ct',
+        'Total_Ct_Chng_Q4_Q1',
+        'Avg_Utilization_Ratio',
+        'Gender_Churn',
+        'Education_Level_Churn',
+        'Marital_Status_Churn',
+        'Income_Category_Churn',
+        'Card_Category_Churn']
+
+    X = pd.DataFrame()
+    X[keep_cols] = df[keep_cols]
+    y = df[response]
+
+    # Spliting the data to 70% train and 30% test
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42)
+    logging.info('SUCCESS: Data splitting finished.')
+    logging.info(f'INFO: X_train size {X_train.shape}.')
+    logging.info(f'INFO: X_test size {X_test.shape}.')
+    logging.info(f'INFO: Y_train size {y_train.shape}.')
+    logging.info(f'INFO: Y_test size {y_test.shape}.')
+    return X_train, X_test, y_train, y_test
 
 def classification_report_image(
     y_train,
