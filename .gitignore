@@ -3,3 +3,4 @@ venv
 Guide.ipynb
 .pytest_cache
 __pycache__
+requirements_py3.8.txt

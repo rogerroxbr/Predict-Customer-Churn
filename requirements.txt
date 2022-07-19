@@ -7,4 +7,5 @@ matplotlib
 seaborn
 pylint
 autopep8
+pytest
 
