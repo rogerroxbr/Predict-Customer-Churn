@@ -50,19 +50,40 @@ Follow the instructions below to execute the code for test file and python file
 
 How to run churn_library.py and what the output should be
 
-To execute the code, run ipython churn_library.py
+To execute the code, run churn_library.py
+
+```bash
+python churn_library.py
+```
 
 To get a pep8 score, run pylint churn_library.py
 
-The output on the console should be these values: X_train.head(), X_test.head(), y_train[:5], y_test[:5], y_train_preds_lr, y_test_preds_lr, y_train_preds_rf, y_test_preds_rf
+```bash
+pylint churn_library.py
+```
 
 How to run test file churn_script_logging_and_tests.py
 
-To test the code, run ipython churn_script_logging_and_tests.py
+To test the code, run churn_script_logging_and_tests.py
 
-To test the pylint score, run pylint churn_script_logging_and_tests.py
+
+```bash
+python churn_script_logging_and_tests.py
+```
+
+To test the pylint score, run in the terminal 
+
+```bash
+pylint churn_script_logging_and_tests.py
+```
 
 Output should be nothing on the console. But in churn_library.log, there should be messages indicating success or failure of tests.
+
+If you want test using the test_churn_script_logging.py use
+
+```bash
+pytest
+```
 
 ## License
 Distributed under the [MIT](https://choosealicense.com/licenses/mit/) License. See ```LICENSE``` for more information.
